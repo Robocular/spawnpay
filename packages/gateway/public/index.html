@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPAWNPAY — Financial infrastructure for AI agents</title>
+<meta name="description" content="Crypto wallets for AI agents. One API call. Wallet, payments, referrals. On Base L2.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050507;color:#e0e0e0;font-family:'Courier New',monospace;font-size:15px;line-height:1.6}
+a{color:#fff;text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px}
+nav{padding:24px 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222}
+nav .logo{color:#fff;font-size:14px;font-weight:700;letter-spacing:2px}
+nav .links{display:flex;gap:20px;font-size:13px}
+.hero{padding:64px 0 48px}
+h1{color:#fff;font-size:22px;font-weight:700;line-height:1.3;margin-bottom:12px}
+.sub{color:#999;font-size:14px;margin-bottom:32px}
+.code-grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:520px){.code-grid{grid-template-columns:1fr 1fr}}
+pre{background:#111;border:1px solid #222;padding:14px;font-size:12px;line-height:1.5;overflow-x:auto;color:#e0e0e0}
+pre .comment{color:#666}
+pre .val{color:#4ade80}
+section{padding:40px 0;border-top:1px solid #151515}
+h2{color:#fff;font-size:16px;font-weight:700;margin-bottom:20px}
+.api-item{margin-bottom:16px}
+.api-item .name{color:#fff;font-weight:700}
+.api-item .name .dash{color:#333;margin:0 6px}
+.api-item.soon{opacity:.35}
+.green{color:#4ade80}
+.referral-chain{padding:16px 0;font-size:13px;color:#666;letter-spacing:1px}
+.install-label{font-size:13px;color:#666;margin-bottom:6px;margin-top:16px}
+footer{padding:32px 0;border-top:1px solid #222;display:flex;justify-content:space-between;font-size:12px;color:#555}
+footer .links{display:flex;gap:16px}
+footer a{color:#555}
+footer a:hover{color:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav>
+  <div class="logo">SPAWNPAY</div>
+  <div class="links">
+    <a href="/docs">Docs</a>
+    <a href="https://github.com/Robocular/spawnpay">GitHub</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>Financial infrastructure for AI agents.</h1>
+  <p class="sub">One API call. Wallet, payments, referrals. On Base L2.</p>
+  <div class="code-grid">
+    <pre><span class="comment"># Create an agent wallet</span>
+curl -X POST \
+  https://spawnpay.com/api/signup</pre>
+    <pre><span class="comment"># Response</span>
+{
+  <span class="val">"apiKey"</span>: "spk_live_...",
+  <span class="val">"walletAddress"</span>: "0x...",
+  <span class="val">"referralCode"</span>: "SP_..."
+}</pre>
+  </div>
+</div>
+
+<section>
+  <h2>APIs</h2>
+  <div class="api-item"><span class="name">Wallets<span class="dash">&mdash;</span></span>Create, fund, send, receive. Every agent gets an address.</div>
+  <div class="api-item"><span class="name">Faucet<span class="dash">&mdash;</span></span>$1 USDC free to start. No strings.</div>
+  <div class="api-item"><span class="name">Referrals<span class="dash">&mdash;</span></span>3-level deep. <span class="green">15%</span> / <span class="green">5%</span> / <span class="green">2%</span> of fees. Agents recruit agents.</div>
+  <div class="api-item soon"><span class="name">Casino<span class="dash">&mdash;</span></span>Coming soon.</div>
+  <div class="api-item soon"><span class="name">Trading<span class="dash">&mdash;</span></span>Coming soon.</div>
+  <div class="api-item soon"><span class="name">Escrow<span class="dash">&mdash;</span></span>Coming soon.</div>
+</section>
+
+<section>
+  <h2>Referrals</h2>
+  <p>Your agents earn <span class="green">15%</span> of every transaction fee from agents they refer.</p>
+  <p style="margin-top:8px">Agents inject referral codes into sub-agent system prompts. Viral by design.</p>
+  <div class="referral-chain">Agent A &rarr; Agent B &rarr; Agent C &rarr; Agent D &rarr; ...</div>
+  <pre><span class="comment"># Referral earnings per level</span>
+Level 1 (direct)&nbsp;&nbsp; <span class="val">15%</span> of fees
+Level 2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="val">5%</span>&nbsp; of fees
+Level 3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="val">2%</span>&nbsp; of fees</pre>
+</section>
+
+<section>
+  <h2>Install (MCP)</h2>
+  <div class="install-label">Quick start:</div>
+  <pre>npx spawnpay-mcp</pre>
+  <div class="install-label">Claude Code config:</div>
+  <pre>{
+  <span class="val">"mcpServers"</span>: {
+    <span class="val">"spawnpay"</span>: {
+      "command": "npx",
+      "args": ["spawnpay-mcp"]
+    }
+  }
+}</pre>
+</section>
+
+<footer>
+  <div>SPAWNPAY 2026</div>
+  <div class="links">
+    <a href="https://github.com/Robocular/spawnpay">GitHub</a>
+    <a href="/docs">Docs</a>
+  </div>
+</footer>
+
+</div>
+</body>
+</html>
