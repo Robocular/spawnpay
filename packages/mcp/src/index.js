@@ -90,11 +90,6 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {} },
   },
   {
-    name: 'spawnpay_faucet',
-    description: 'Claim free $1 USDC from the Spawnpay testnet faucet. Great for first-time setup.',
-    inputSchema: { type: 'object', properties: {} },
-  },
-  {
     name: 'spawnpay_referral_stats',
     description: 'View your Spawnpay referral earnings, direct/indirect referral counts, and shareable referral link.',
     inputSchema: { type: 'object', properties: {} },
@@ -141,11 +136,6 @@ const handlers = {
   async spawnpay_receive() {
     await ensureAuth();
     return gw('/api/wallet/address');
-  },
-
-  async spawnpay_faucet() {
-    await ensureAuth();
-    return gw('/api/faucet/claim', { body: {} });
   },
 
   async spawnpay_referral_stats() {

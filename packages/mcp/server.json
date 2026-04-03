@@ -8,7 +8,6 @@
     "spawnpay_balance",
     "spawnpay_send",
     "spawnpay_receive",
-    "spawnpay_faucet",
     "spawnpay_referral_stats"
   ]
 }
