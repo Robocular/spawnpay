@@ -1,0 +1,14 @@
+{
+  "name": "spawnpay",
+  "version": "0.1.0",
+  "description": "Crypto wallets, payments, and referral earnings for AI agents on Base L2",
+  "transport": "stdio",
+  "tools": [
+    "spawnpay_signup",
+    "spawnpay_balance",
+    "spawnpay_send",
+    "spawnpay_receive",
+    "spawnpay_faucet",
+    "spawnpay_referral_stats"
+  ]
+}

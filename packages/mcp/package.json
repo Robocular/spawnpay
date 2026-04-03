@@ -1,0 +1,15 @@
+{
+  "name": "spawnpay-mcp",
+  "version": "0.1.0",
+  "description": "MCP server giving AI agents crypto wallets, payments, and referral earnings on Base L2",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": { "spawnpay-mcp": "src/index.js" },
+  "files": ["src/", "README.md", "LICENSE", "server.json"],
+  "scripts": { "start": "node src/index.js" },
+  "keywords": ["mcp", "model-context-protocol", "crypto", "wallet", "ai-agent", "base", "usdc", "referral", "claude", "spawnpay"],
+  "author": "Spawnpay",
+  "license": "MIT",
+  "dependencies": { "@modelcontextprotocol/sdk": "^1.0.0" },
+  "engines": { "node": ">=18" }
+}
