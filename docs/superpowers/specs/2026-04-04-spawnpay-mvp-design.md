@@ -56,7 +56,9 @@ Spawnpay is agent-native financial infrastructure. One API key gives any AI agen
 
 ## Data Model
 
-### Agent (Redis: `agent:{apiKey}`)
+**Storage**: SQLite on VPS for durable financial data (agent records, wallet keys, transactions, referral ledger). Redis for caching, rate limiting, and session data only. SQLite gives ACID transactions without external dependencies.
+
+### Agent (SQLite: `agents` table)
 ```json
 {
   "id": "sp_a1b2c3",
@@ -73,7 +75,7 @@ Spawnpay is agent-native financial infrastructure. One API key gives any AI agen
 }
 ```
 
-### Referral Ledger (Redis: `referral:{code}`)
+### Referral Ledger (SQLite: `referrals` table)
 ```json
 {
   "ownerAgentId": "sp_a1b2c3",
@@ -85,7 +87,7 @@ Spawnpay is agent-native financial infrastructure. One API key gives any AI agen
 }
 ```
 
-### Transaction Log (Redis list: `txlog:{agentId}`)
+### Transaction Log (SQLite: `transactions` table)
 ```json
 {
   "type": "send|receive|faucet|referral_payout",
@@ -138,7 +140,8 @@ Response: { "txHash": "0x...", "fee": "0.015", "referralPaid": { "level1": "0.00
 Response: { "amount": "1.00", "currency": "USDC", "txHash": "0x...", "message": "Welcome to Spawnpay. Share your referral code to earn." }
 ```
 - One-time $1 USDC per agent
-- Rate limited by API key (prevents abuse)
+- Anti-abuse: IP rate limit (5 signups/hour per IP) + proof-of-referral (faucet only available if signed up with a valid referral code from an agent that has made at least 1 real transaction)
+- Fallback: agents without referral can still sign up but don't get faucet — they deposit their own funds
 - Funded from Spawnpay treasury wallet on Base
 
 ### GET /api/referral/stats
@@ -198,11 +201,11 @@ Auto-creates API key on first use (no signup friction).
 ## Key Management
 
 - **Master seed** stored as env var on VPS (`SPAWNPAY_MASTER_SEED`)
-- **HD derivation**: `m/44'/8453'/0'/0/{agentIndex}` (BIP-44, Base chainId)
+- **HD derivation**: `m/44'/60'/{agentIndex}'/0/0` (BIP-44 standard ETH path, account-level isolation per agent)
 - **Per-agent keys** encrypted with AES-256-GCM before storage
   - Encryption key derived from master key + agent ID (unique per agent)
   - Stored in Redis as `wallet:{agentId}` → encrypted blob
-- **Backup**: Redis RDB snapshots to encrypted S3 daily
+- **Backup**: SQLite WAL mode for crash safety, daily encrypted backup to S3
 - **Recovery**: master seed + agent index = full wallet recovery (deterministic)
 
 ## Referral Commission Flow
@@ -265,11 +268,39 @@ To get listed in Anthropic's official MCP tool directory:
 ## Security Considerations
 
 - Private keys never leave VPS, never in logs, never in API responses
-- Gateway → VPS communication over HTTPS with shared secret
+- **Gateway → VPS auth**: HMAC-SHA256 signed requests with timestamp (reject >60s drift). Shared secret in env var on both Vercel and VPS.
+- **VPS isolation**: Spawnpay runs as a separate Linux user with its own systemd service. Firewall rules whitelist only Vercel's IP ranges for the backend port. No shared processes with other services.
 - Rate limiting on all endpoints (Redis-backed)
-- Faucet abuse prevention: 1 claim per API key, IP rate limiting
+- Faucet abuse: gated behind valid referral code from active agent + IP rate limiting
 - Transaction signing happens only on VPS, never on gateway
 - Master seed backed up encrypted, never in git
+- **Key rotation**: `POST /api/key/rotate` returns new API key, invalidates old immediately
+- **Spending limits**: configurable daily max per agent (default $100/day), agent can raise via API
+- **Idempotency**: `POST /api/wallet/send` accepts optional `Idempotency-Key` header, deduplicates within 24h window
+- **Self-referral prevention**: referral code validated on signup — must belong to a different agent, no circular chains allowed (walk chain to verify)
+
+## Additional Endpoints (from review)
+
+### POST /api/key/rotate
+```
+Response: { "apiKey": "spk_live_new...", "previousKeyInvalidated": true }
+```
+
+### GET /api/wallet/tx/{txHash}
+```
+Response: { "txHash": "0x...", "status": "confirmed|pending|failed", "amount": "5.00", "to": "0x...", "timestamp": "..." }
+```
+
+### Deposit Detection
+- VPS runs a polling service every 10s checking agent wallet addresses for incoming USDC/ETH transfers on Base
+- Uses Alchemy/QuickNode webhooks as primary, polling as fallback
+- Credits agent's internal balance on detection (all balances are internal ledger — on-chain transfers happen on deposit/withdraw only)
+
+### Balance Model
+All balances are **internal ledger** (custodial). On-chain transfers happen only on:
+- **Deposit**: external → agent wallet address → detected → credited to internal balance
+- **Withdraw/Send**: internal balance debited → on-chain transfer executed from agent's HD wallet
+- **Referral payouts**: internal credit (no gas, instant)
 
 ## Success Metrics
 
