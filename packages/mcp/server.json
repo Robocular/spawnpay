@@ -1,13 +1,29 @@
 {
-  "name": "spawnpay",
-  "version": "0.1.0",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Robocular/spawnpay",
   "description": "Crypto wallets, payments, and referral earnings for AI agents on Base L2",
-  "transport": "stdio",
-  "tools": [
-    "spawnpay_signup",
-    "spawnpay_balance",
-    "spawnpay_send",
-    "spawnpay_receive",
-    "spawnpay_referral_stats"
+  "repository": {
+    "url": "https://github.com/Robocular/spawnpay",
+    "source": "github"
+  },
+  "version": "0.1.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "spawnpay-mcp",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "description": "Your Spawnpay API key (auto-created on first use if not set)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true,
+          "name": "SPAWNPAY_API_KEY"
+        }
+      ]
+    }
   ]
 }
