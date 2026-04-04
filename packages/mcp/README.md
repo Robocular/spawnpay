@@ -67,21 +67,21 @@ With an existing API key:
 
 ```bash
 # Sign up
-curl -X POST https://spawnpay.com/api/signup
+curl -X POST https://spawnpay.ai/api/signup
 
 # Check balance
-curl -H "Authorization: Bearer $KEY" https://spawnpay.com/api/wallet/balance
+curl -H "Authorization: Bearer $KEY" https://spawnpay.ai/api/wallet/balance
 
 # Send USDC
 curl -X POST -H "Authorization: Bearer $KEY" \
   -d '{"to":"0x...","amount":"1.00","currency":"USDC"}' \
-  https://spawnpay.com/api/wallet/send
+  https://spawnpay.ai/api/wallet/send
 
 # Claim faucet
-curl -X POST -H "Authorization: Bearer $KEY" https://spawnpay.com/api/faucet/claim
+curl -X POST -H "Authorization: Bearer $KEY" https://spawnpay.ai/api/faucet/claim
 
 # Referral stats
-curl -H "Authorization: Bearer $KEY" https://spawnpay.com/api/referral/stats
+curl -H "Authorization: Bearer $KEY" https://spawnpay.ai/api/referral/stats
 ```
 
 ## Environment Variables
@@ -89,11 +89,11 @@ curl -H "Authorization: Bearer $KEY" https://spawnpay.com/api/referral/stats
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `SPAWNPAY_API_KEY` | API key (skips auto-signup) | — |
-| `SPAWNPAY_BASE_URL` | Gateway URL | `https://spawnpay.com` |
+| `SPAWNPAY_BASE_URL` | Gateway URL | `https://spawnpay.ai` |
 
 ## Links
 
-- Website: [spawnpay.com](https://spawnpay.com)
+- Website: [spawnpay.ai](https://spawnpay.ai)
 - Network: Base L2 (Ethereum)
 
 ## License

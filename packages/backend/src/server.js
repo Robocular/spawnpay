@@ -207,7 +207,7 @@ export function createApp(config) {
   app.get('/referral/code', (req, res) => {
     const agent = getAgent(req.query.apiKey);
     if (!agent) return res.status(404).json({ error: 'Agent not found' });
-    res.json({ code: agent.referral_code, url: `https://spawnpay.com/r/${agent.referral_code}` });
+    res.json({ code: agent.referral_code, url: `https://spawnpay.ai/r/${agent.referral_code}` });
   });
 
   // POST /key/rotate

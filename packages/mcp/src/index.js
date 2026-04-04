@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-const BASE_URL = process.env.SPAWNPAY_BASE_URL || 'https://spawnpay.com';
+const BASE_URL = process.env.SPAWNPAY_BASE_URL || 'https://spawnpay.ai';
 const CONFIG_DIR = join(homedir(), '.spawnpay');
 const CONFIG_PATH = join(CONFIG_DIR, 'config.json');
 
