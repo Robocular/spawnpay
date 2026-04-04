@@ -231,6 +231,29 @@ export function createApp(config) {
     res.json({ txHash: tx.tx_hash, status: tx.status, amount: tx.amount, to: tx.to_address, timestamp: tx.created_at });
   });
 
+  // GET /stats (no auth — public growth dashboard)
+  app.get('/stats', (req, res) => {
+    const agents = db.prepare('SELECT COUNT(*) as count FROM agents').get();
+    const txCount = db.prepare('SELECT COUNT(*) as count FROM transactions').get();
+    const totalVolume = db.prepare("SELECT COALESCE(SUM(amount),0) as total FROM transactions WHERE type='send'").get();
+    const totalFees = db.prepare("SELECT COALESCE(SUM(amount),0) as total FROM referral_payouts").get();
+    const maxDepth = db.prepare("SELECT MAX(json_array_length(referral_chain)) as depth FROM agents").get();
+    const recentAgents = db.prepare('SELECT id, referral_code, referred_by, created_at FROM agents ORDER BY created_at DESC LIMIT 10').all();
+    res.json({
+      totalAgents: agents.count,
+      totalTransactions: txCount.count,
+      totalVolume: totalVolume.total,
+      referralPayouts: totalFees.total,
+      maxReferralDepth: maxDepth.depth || 0,
+      recentSignups: recentAgents.map(a => ({
+        id: a.id,
+        referralCode: a.referral_code,
+        referredBy: a.referred_by || null,
+        joinedAt: a.created_at,
+      })),
+    });
+  });
+
   // attach db for cleanup
   app._db = db;
   app.closeDb = () => closeDb(db);
