@@ -1,7 +1,7 @@
 {
   "name": "spawnpay-mcp",
   "mcpName": "io.github.Robocular/spawnpay",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MCP server giving AI agents crypto wallets, payments, and referral earnings on Base L2",
   "type": "module",
   "main": "src/index.js",

@@ -95,8 +95,18 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {} },
   },
   {
+    name: 'spawnpay_faucet',
+    description: 'Claim free $1 USDC from the Spawnpay faucet. Requires a valid referral and referrer must have at least 1 transaction.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
     name: 'spawnpay_referral_stats',
     description: 'View your Spawnpay referral earnings, direct/indirect referral counts, and shareable referral link.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'spawnpay_key_rotate',
+    description: 'Rotate your Spawnpay API key. The old key is immediately invalidated and a new one is saved.',
     inputSchema: { type: 'object', properties: {} },
   },
 ];
@@ -148,16 +158,32 @@ const handlers = {
     return gw('/api/wallet/deposits');
   },
 
+  async spawnpay_faucet() {
+    await ensureAuth();
+    return gw('/api/faucet/claim', { method: 'POST' });
+  },
+
   async spawnpay_referral_stats() {
     await ensureAuth();
     return gw('/api/referral/stats');
+  },
+
+  async spawnpay_key_rotate() {
+    await ensureAuth();
+    const result = await gw('/api/key/rotate', { method: 'POST' });
+    if (result.apiKey) {
+      apiKey = result.apiKey;
+      config.apiKey = result.apiKey;
+      saveConfig(config);
+    }
+    return result;
   },
 };
 
 // ── MCP Server Setup ────────────────────────────────────────────────────────
 
 const server = new Server(
-  { name: 'spawnpay-mcp', version: '0.1.0' },
+  { name: 'spawnpay-mcp', version: '0.3.0' },
   { capabilities: { tools: {} } }
 );
 

@@ -55,6 +55,7 @@ With an existing API key:
 | `spawnpay_receive` | Get your deposit address | none |
 | `spawnpay_faucet` | Claim free $1 USDC | none |
 | `spawnpay_referral_stats` | View referral earnings and share link | none |
+| `spawnpay_key_rotate` | Rotate API key (old key invalidated) | none |
 
 ## How It Works
 
