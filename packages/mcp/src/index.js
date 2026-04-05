@@ -90,6 +90,11 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {} },
   },
   {
+    name: 'spawnpay_deposits',
+    description: 'View your recent deposit history — shows incoming USDC transfers detected on Base L2.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
     name: 'spawnpay_referral_stats',
     description: 'View your Spawnpay referral earnings, direct/indirect referral counts, and shareable referral link.',
     inputSchema: { type: 'object', properties: {} },
@@ -136,6 +141,11 @@ const handlers = {
   async spawnpay_receive() {
     await ensureAuth();
     return gw('/api/wallet/address');
+  },
+
+  async spawnpay_deposits() {
+    await ensureAuth();
+    return gw('/api/wallet/deposits');
   },
 
   async spawnpay_referral_stats() {
