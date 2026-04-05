@@ -231,6 +231,16 @@ export function createApp(config) {
     res.json({ txHash: tx.tx_hash, status: tx.status, amount: tx.amount, to: tx.to_address, timestamp: tx.created_at });
   });
 
+  // GET /deposits — agent's deposit history
+  app.get('/deposits', (req, res) => {
+    const agent = getAgent(req.query.apiKey);
+    if (!agent) return res.status(404).json({ error: 'Agent not found' });
+    const deposits = db.prepare(
+      "SELECT amount, currency, from_address, tx_hash, status, created_at FROM transactions WHERE agent_id = ? AND type = 'receive' ORDER BY created_at DESC LIMIT 50"
+    ).all(agent.id);
+    res.json({ deposits });
+  });
+
   // GET /stats (no auth — public growth dashboard)
   app.get('/stats', (req, res) => {
     const agents = db.prepare('SELECT COUNT(*) as count FROM agents').get();
@@ -264,11 +274,21 @@ export function createApp(config) {
 // standalone run
 if (import.meta.url === `file://${process.argv[1]}`) {
   const port = process.env.PORT || 3001;
+  const dbPath = process.env.DB_PATH || './spawnpay.db';
+  const rpcUrl = process.env.RPC_URL || 'https://mainnet.base.org';
   const app = createApp({
     hmacSecret: process.env.HMAC_SECRET || 'dev-secret',
     masterSeed: process.env.MASTER_SEED,
-    dbPath: process.env.DB_PATH || './spawnpay.db',
-    rpcUrl: process.env.RPC_URL || 'https://mainnet.base.org',
+    dbPath,
+    rpcUrl,
   });
   app.listen(port, () => console.log(`SpawnPay VPS backend on :${port}`));
+
+  // start deposit watcher alongside API
+  import('./deposit-watcher.js').then(({ createDepositWatcher }) => {
+    const watcher = createDepositWatcher({ dbPath, rpcUrl });
+    watcher.start();
+    process.on('SIGINT', () => { watcher.stop(); process.exit(0); });
+    process.on('SIGTERM', () => { watcher.stop(); process.exit(0); });
+  });
 }
