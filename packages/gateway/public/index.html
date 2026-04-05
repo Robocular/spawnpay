@@ -86,6 +86,25 @@ Level 3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span 
 </section>
 
 <section>
+  <h2>Live Network</h2>
+  <div id="stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+    <div style="background:#111;border:1px solid #222;padding:14px;text-align:center">
+      <div id="s-agents" style="color:#4ade80;font-size:24px;font-weight:700">--</div>
+      <div style="color:#666;font-size:11px;margin-top:4px">AGENTS</div>
+    </div>
+    <div style="background:#111;border:1px solid #222;padding:14px;text-align:center">
+      <div id="s-txns" style="color:#4ade80;font-size:24px;font-weight:700">--</div>
+      <div style="color:#666;font-size:11px;margin-top:4px">TRANSACTIONS</div>
+    </div>
+    <div style="background:#111;border:1px solid #222;padding:14px;text-align:center">
+      <div id="s-depth" style="color:#4ade80;font-size:24px;font-weight:700">--</div>
+      <div style="color:#666;font-size:11px;margin-top:4px">REFERRAL DEPTH</div>
+    </div>
+  </div>
+  <div id="recent" style="font-size:12px;color:#555"></div>
+</section>
+
+<section>
   <h2>Install (MCP)</h2>
   <div class="install-label">Quick start:</div>
   <pre>npx spawnpay-mcp</pre>
@@ -109,5 +128,19 @@ Level 3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span 
 </footer>
 
 </div>
+<script>
+fetch('/api/stats').then(r=>r.json()).then(d=>{
+  document.getElementById('s-agents').textContent=d.totalAgents||0;
+  document.getElementById('s-txns').textContent=d.totalTransactions||0;
+  document.getElementById('s-depth').textContent=d.maxReferralDepth||0;
+  if(d.recentSignups&&d.recentSignups.length){
+    const el=document.getElementById('recent');
+    el.innerHTML='<div style="margin-top:8px;color:#444">Recent: '+
+      d.recentSignups.slice(0,3).map(a=>
+        '<span style="color:#666">'+a.id.slice(0,12)+'...</span>'+(a.referredBy?' <span style="color:#333">&larr; '+a.referredBy+'</span>':'')
+      ).join(' &middot; ')+'</div>';
+  }
+}).catch(()=>{});
+</script>
 </body>
 </html>
