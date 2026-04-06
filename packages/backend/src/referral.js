@@ -15,8 +15,8 @@ export function calculateCommissions(platformFee, chain) {
   })).filter(c => c.amount > 0);
 }
 
-export function creditReferrals(db, txId, commissions) {
-  const creditStmt = db.prepare('UPDATE agents SET balance = balance + ?, referral_earned = referral_earned + ? WHERE id = ?');
+export function creditReferrals(db, txId, commissions, balanceColumn = 'credit_balance') {
+  const creditStmt = db.prepare(`UPDATE agents SET ${balanceColumn} = ${balanceColumn} + ?, referral_earned = referral_earned + ? WHERE id = ?`);
   const logStmt = db.prepare('INSERT INTO referral_payouts (tx_id, referrer_id, level, amount) VALUES (?, ?, ?, ?)');
 
   const credit = db.transaction(() => {
