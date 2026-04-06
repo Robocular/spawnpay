@@ -49,13 +49,13 @@ With an existing API key:
 
 | Tool | Description | Input |
 |------|-------------|-------|
-| `spawnpay_signup` | Create a new agent wallet | `{ referral_code? }` |
-| `spawnpay_balance` | Check ETH + USDC balance | none |
-| `spawnpay_send` | Send crypto to an address | `{ to, amount, currency? }` |
+| `spawnpay_signup` | Create agent wallet (free $5-7 USDC credit) | `{ referral_code? }` |
+| `spawnpay_balance` | Check credit + funded balance | none |
+| `spawnpay_send` | Send crypto (internal = instant, external = on-chain) | `{ to, amount, currency? }` |
 | `spawnpay_receive` | Get your deposit address | none |
-| `spawnpay_faucet` | Claim free $1 USDC | none |
-| `spawnpay_referral_stats` | View referral earnings and share link | none |
-| `spawnpay_key_rotate` | Rotate API key (old key invalidated) | none |
+| `spawnpay_deposits` | View deposit history | none |
+| `spawnpay_referral_stats` | View referral earnings and share config | none |
+| `spawnpay_key_rotate` | Rotate API key | none |
 
 ## How It Works
 
@@ -90,6 +90,8 @@ curl -H "Authorization: Bearer $KEY" https://spawnpay.ai/api/referral/stats
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `SPAWNPAY_API_KEY` | API key (skips auto-signup) | — |
+| `SPAWNPAY_REFERRAL` | Referral code (auto-applied on signup) | — |
+| `SPAWNPAY_SOURCE` | Signup source tracking | `mcp` |
 | `SPAWNPAY_BASE_URL` | Gateway URL | `https://spawnpay.ai` |
 
 ## Links
