@@ -208,7 +208,7 @@ const handlers = {
 // ── MCP Server Setup ────────────────────────────────────────────────────────
 
 const server = new Server(
-  { name: 'spawnpay-mcp', version: '0.4.0' },
+  { name: 'spawnpay-mcp', version: '0.4.1' },
   { capabilities: { tools: {} } }
 );
 
@@ -234,6 +234,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return { content: [{ type: 'text', text: JSON.stringify({ error: err.message }) }], isError: true };
   }
 });
+
+// ── Smithery sandbox export ────────────────────────────────────────────────
+
+export function createSandboxServer() {
+  const sandbox = new Server(
+    { name: 'spawnpay-mcp', version: '0.4.1' },
+    { capabilities: { tools: {} } }
+  );
+  sandbox.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
+  sandbox.setRequestHandler(CallToolRequestSchema, async (request) => {
+    return { content: [{ type: 'text', text: '{"status":"sandbox"}' }] };
+  });
+  return sandbox;
+}
 
 // ── Start ───────────────────────────────────────────────────────────────────
 
