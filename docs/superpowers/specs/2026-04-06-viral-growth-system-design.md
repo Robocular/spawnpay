@@ -15,9 +15,25 @@ Transform Spawnpay from a passive wallet MCP into a self-distributing agent econ
 - Internal transfers (agent-to-agent) always work. 0.5% platform fee applies.
 - External withdrawals gated by real treasury balance (see section 5).
 
+### Anti-abuse measures
+
+- **Signup rate limit**: max 1 signup per IP per hour (backend middleware).
+- **Transfer cooldown**: signup bonus credits are locked for 24 hours before they can be sent. New column `bonus_unlocks_at TEXT` set to `datetime('now', '+24 hours')` on signup. Send endpoint checks this before allowing transfers of credit-origin balance.
+- **Dual balance columns**: `credit_balance` (from signup bonus, non-withdrawable) and `funded_balance` (from real deposits, withdrawable). `spawnpay_send` deducts from `funded_balance` first, then `credit_balance`. Only `funded_balance` can be withdrawn externally.
+- **Referral commissions on credit-funded transactions**: credited as `credit_balance`, not `funded_balance`. Only transactions involving real deposits generate withdrawable commissions.
+- **System-wide cap**: total outstanding signup bonus credits capped at $10,000. Once reached, new signups get $0 bonus until credits are consumed via fees.
+- **Wallet derivation**: use `MAX(rowid) + 1` instead of `COUNT(*)` for HD wallet index to prevent index collision if agents are ever deleted.
+
+### Balance race condition fix
+
+All balance deductions use atomic SQL: `UPDATE agents SET credit_balance = credit_balance - ? WHERE id = ? AND credit_balance >= ? RETURNING credit_balance`. If no rows returned, insufficient balance.
+
 **Changes required**:
-- Backend: modify signup handler to credit $5 (or $7 with referral) to internal balance.
-- Backend: remove old faucet endpoint or repurpose as signup bonus logic.
+- Backend: add `credit_balance`, `funded_balance`, `bonus_unlocks_at` columns to agents table. Migrate existing agents with `credit_balance = balance, funded_balance = 0`.
+- Backend: modify signup handler to credit $5/$7 to `credit_balance`.
+- Backend: remove old faucet endpoint.
+- Backend: modify send handler to use dual-balance deduction with atomic SQL.
+- Backend: fix wallet derivation to use MAX(rowid).
 - MCP: remove `spawnpay_faucet` tool (bonus is automatic on signup now).
 - MCP: update `spawnpay_signup` response to show starting balance.
 
@@ -42,7 +58,8 @@ This exposes the referral code to whoever reads the agent's output — developer
 New environment variable read at startup. If set and agent has no `referred_by`, auto-applies the referral code during signup. Zero-friction referral — developers paste a config snippet and the chain extends automatically.
 
 **Changes required**:
-- MCP: read `SPAWNPAY_REFERRAL` from env, pass to signup body.
+- MCP: read `SPAWNPAY_REFERRAL` from env at module level (before `ensureAuth()` fires).
+- MCP: modify `ensureAuth()` to pass `{ referralCode: process.env.SPAWNPAY_REFERRAL }` in the signup body instead of empty `{}`.
 - Backend: no changes (already accepts `referralCode` in signup).
 
 ### C) Referral in signup response
@@ -75,6 +92,13 @@ Creates transaction demand. Agents pay each other for tool access.
 - Platform takes 0.5% fee (same as transfers).
 - Referral commissions apply on the fee.
 - Webhook notification to provider includes buyer agent ID and optional payload.
+
+### Security
+
+- **SSRF protection on webhooks**: validate `webhook_url` against allowlist — must be HTTPS, public IP only. Block RFC1918 (10.x, 172.16-31.x, 192.168.x), link-local (169.254.x), localhost, and cloud metadata (169.254.169.254). Resolve DNS before connecting to prevent DNS rebinding.
+- **Price constraints**: minimum $0.01, maximum $100 per call. Enforced at registration and verified at purchase time.
+- **Webhook delivery**: 5s timeout, 1 retry with 10s delay. If webhook fails, transaction still completes (buyer pays, seller credited). Webhook is notification only — seller checks their balance to confirm. No refunds on webhook failure in V1.
+- **Webhook payload**: `{ "buyer": "<agent_id>", "tool": "<tool_name>", "amount": "<price>", "payload": "<buyer_provided_data>" }`. Signed with HMAC using seller's API key so they can verify authenticity.
 
 ### MVP scope
 
@@ -159,11 +183,24 @@ If treasury can't cover a withdrawal:
 
 ### Existing `spawnpay_send` behavior change
 
-`spawnpay_send` detects whether `to` is a Spawnpay agent (by looking up address in agents table) or external. If internal → instant ledger transfer. If external → routes to withdraw logic with queue gating.
+`spawnpay_send` detects whether `to` is a Spawnpay agent (by looking up wallet_address in agents table) or external:
+- **Internal**: Atomic ledger transfer. Deduct from sender (credit_balance first, then funded_balance). Credit recipient's funded_balance (received funds are real to the recipient). Platform fee taken. Referral commissions: credit-type if source was credit_balance, funded-type if source was funded_balance.
+- **External**: Routes to withdraw logic. Only funded_balance eligible. Queue-gated by treasury.
+
+### Withdrawal queue rules
+
+- Max queue depth: 100 entries. Reject new requests after that.
+- Withdrawal requests expire after 30 days if not processed. Funds return to agent's funded_balance.
+- Agents can cancel queued withdrawals via `DELETE /wallet/withdraw`.
+- Minimum withdrawal: $1 USDC. Maximum: $500 per request.
 
 ### Transparency
 
 `/api/stats` shows: treasury balance, withdrawal queue depth, total queued amount. No information hiding.
+
+### Platform fee accounting
+
+The 0.5% platform fee on each transaction is split: 20% to referral chain (15% + 5% + 2% across 3 levels, if they exist), 80% retained as platform revenue. Platform revenue accrues as a counter in the database (not a real balance). When the treasury is funded, platform revenue is the first claim. This is stated clearly in docs.
 
 ## 6. Distribution Strategy
 
@@ -185,37 +222,86 @@ Add optional `source` param to signup endpoint. Values: `referral`, `npm`, `smit
 - Gateway: pass `source` query param through to backend.
 - MCP: pass `SPAWNPAY_SOURCE` env var if set.
 
-## Version Plan
+## Version Plan — Phased Release
 
-All changes ship as **v0.4.0** of the MCP package and corresponding backend + gateway updates.
+### v0.4.0 — Viral Core (ship first)
 
-### New MCP tools (v0.4.0)
+Sections 1 + 2 + 6. This is what drives growth and can ship in 1-2 days.
 
-| Tool | Description |
-|------|-------------|
-| `spawnpay_marketplace_list` | Browse paid tools |
-| `spawnpay_marketplace_register` | List a tool for sale |
-| `spawnpay_marketplace_buy` | Pay for a tool call |
-| `spawnpay_withdraw` | External withdrawal (queue-gated) |
-| `spawnpay_dashboard` | Referral stats summary + dashboard link |
+**Backend changes:**
+- DB migration: add `credit_balance`, `funded_balance`, `bonus_unlocks_at`, `signup_bonus_claimed`, `source` columns. Migrate existing 5 agents: `credit_balance = balance, funded_balance = 0, signup_bonus_claimed = 0`.
+- Fix wallet derivation to use `MAX(rowid) + 1`.
+- Signup handler: credit $5/$7, set `bonus_unlocks_at`, accept `source` param.
+- Send handler: dual-balance deduction with atomic SQL, 24h cooldown check on credit balance, internal vs external routing.
+- Signup rate limit: 1 per IP per hour.
+- Remove old faucet endpoint.
+- Expand transaction type CHECK constraint: add `'signup_bonus'`.
 
-### Removed MCP tools
+**Gateway changes:**
+- Pass `source` query param through signup.
+- Remove faucet route (or redirect to signup).
+
+**MCP changes:**
+- Remove `spawnpay_faucet` tool.
+- Read `SPAWNPAY_REFERRAL` env var, pass to `ensureAuth()` signup body.
+- Modify `spawnpay_signup` response: show starting balance + referral config snippet.
+- Modify `spawnpay_balance` response: append referral sharing block.
+- Modify `spawnpay_referral_stats` response: append referral sharing block.
+
+**Distribution:**
+- Reddit posts (r/ClaudeAI, r/LocalLLaMA, r/ChatGPTCoding).
+- Submit to Smithery, re-auth MCP Registry.
+- Dev.to article.
+
+### v0.5.0 — Marketplace + Dashboard (ship after v0.4.0 has traction)
+
+Sections 3 + 4. Only build once there are 50+ agents and internal transaction volume.
+
+**New MCP tools:**
+- `spawnpay_marketplace_list` — browse paid tools
+- `spawnpay_marketplace_register` — list a tool for sale
+- `spawnpay_marketplace_buy` — pay for a tool call
+- `spawnpay_dashboard` — referral stats summary + dashboard link
+
+**New backend:**
+- `marketplace_tools` table.
+- Register, list, buy endpoints with SSRF protection and price constraints.
+- Expanded `/stats` endpoint with leaderboard.
+- `/referral/tree` endpoint.
+
+**New gateway:**
+- Dashboard HTML page with Chart.js + force graph. Polling interval: 60s (not 30s, to conserve Vercel invocations). Stats endpoint cached for 30s.
+
+### v0.6.0 — Withdrawal System (ship when treasury has real funds)
+
+Section 5. Only relevant once real USDC enters the system.
+
+**New MCP tools:**
+- `spawnpay_withdraw` — external withdrawal, queue-gated
+
+**New backend:**
+- Withdrawal queue table.
+- Queue processing logic, expiry, cancellation.
+- Treasury balance tracking.
+
+### Removed MCP tools (v0.4.0)
 
 | Tool | Reason |
 |------|--------|
 | `spawnpay_faucet` | Replaced by automatic signup bonus |
 
-### Modified MCP tools
+### Modified MCP tools (v0.4.0)
 
 | Tool | Change |
 |------|--------|
 | `spawnpay_signup` | Shows starting balance, includes referral config snippet |
 | `spawnpay_balance` | Appends referral sharing block |
 | `spawnpay_referral_stats` | Appends referral sharing block |
-| `spawnpay_send` | Detects internal vs external, routes accordingly |
+| `spawnpay_send` | Dual-balance deduction, internal vs external routing |
 
 ## Success Metrics
 
-- **Week 1**: 50+ agents signed up, 100+ internal transactions.
-- **Week 4**: 3+ referral depth achieved, 5+ marketplace tools registered.
-- **Month 2**: Organic signups exceed seeded signups (viral coefficient > 1).
+- **Week 1 (v0.4.0)**: 50+ agents signed up, 100+ internal transactions, 3+ referral depth.
+- **Week 4**: Organic signups > seeded signups (viral coefficient > 1). Trigger v0.5.0 build.
+- **Month 2 (v0.5.0)**: 5+ marketplace tools registered, dashboard live.
+- **Month 3+**: First real deposits, withdrawal system justified.
