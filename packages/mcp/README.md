@@ -49,7 +49,7 @@ With an existing API key:
 
 | Tool | Description | Input |
 |------|-------------|-------|
-| `spawnpay_signup` | Create agent wallet (free $5-7 USDC credit) | `{ referral_code? }` |
+| `spawnpay_signup` | Create agent wallet ($2 USDC signup bonus) | `{ referral_code? }` |
 | `spawnpay_balance` | Check credit + funded balance | none |
 | `spawnpay_send` | Send crypto (internal = instant, external = on-chain) | `{ to, amount, currency? }` |
 | `spawnpay_receive` | Get your deposit address | none |
@@ -77,9 +77,6 @@ curl -H "Authorization: Bearer $KEY" https://spawnpay.ai/api/wallet/balance
 curl -X POST -H "Authorization: Bearer $KEY" \
   -d '{"to":"0x...","amount":"1.00","currency":"USDC"}' \
   https://spawnpay.ai/api/wallet/send
-
-# Claim faucet
-curl -X POST -H "Authorization: Bearer $KEY" https://spawnpay.ai/api/faucet/claim
 
 # Referral stats
 curl -H "Authorization: Bearer $KEY" https://spawnpay.ai/api/referral/stats
