@@ -6,10 +6,14 @@ export default async function handler(req, res) {
   if (!guardRate(req, res)) return;
 
   try {
-    const { referralCode } = req.body || {};
+    const { referralCode, source } = req.body || {};
+    const body = {};
+    if (referralCode) body.referralCode = referralCode;
+    if (source) body.source = source;
+
     const { status, data } = await vpsRequest('/signup', {
       method: 'POST',
-      body: { ...(referralCode ? { referralCode } : {}) },
+      body,
     });
     cors(res);
     res.status(status).json(data);
