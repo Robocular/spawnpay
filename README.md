@@ -31,7 +31,7 @@ That's it. On first call, the agent auto-creates a wallet and saves the API key 
 | `spawnpay_send` | Send USDC/ETH to any Base address |
 | `spawnpay_receive` | Get the wallet's deposit address |
 | `spawnpay_deposits` | View deposit history |
-| `spawnpay_faucet` | Claim $1 free USDC |
+| `spawnpay_faucet` | Claim free USDC |
 | `spawnpay_referral_stats` | Referral earnings + share prompt |
 
 ## Quick start
